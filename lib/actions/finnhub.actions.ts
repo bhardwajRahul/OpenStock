@@ -26,6 +26,13 @@ type SearchStockCandidate = FinnhubSearchResult & {
     __exchange?: string;
 };
 
+const FINNHUB_EXCHANGE_SUFFIXES = new Set([
+    'AS', 'AT', 'AX', 'BA', 'BK', 'BO', 'BR', 'CO', 'DE', 'F', 'HE', 'HK',
+    'IL', 'IS', 'JK', 'JO', 'KL', 'KQ', 'KS', 'L', 'LS', 'MC', 'MI', 'MX',
+    'NS', 'NZ', 'OL', 'PA', 'PR', 'SA', 'SI', 'SS', 'ST', 'SW', 'SZ', 'T',
+    'TA', 'TO', 'TW', 'TWO', 'V', 'VI', 'WA',
+]);
+
 async function fetchJSON<T>(url: string, revalidateSeconds?: number): Promise<T> {
     const options: RequestInit & { next?: { revalidate?: number } } = revalidateSeconds
         ? { cache: 'force-cache', next: { revalidate: revalidateSeconds } }
@@ -47,9 +54,17 @@ function getExchangeLabel(symbol: string, exchange?: string) {
     }
 
     const parts = symbol.split('.');
-    const suffix = parts.length > 1 ? parts[parts.length - 1] : '';
+    const suffix = parts.length > 1 ? parts[parts.length - 1].toUpperCase() : '';
 
-    return suffix || 'US';
+    if (!suffix) {
+        return 'US';
+    }
+
+    if (FINNHUB_EXCHANGE_SUFFIXES.has(suffix) || suffix.length >= 2) {
+        return suffix;
+    }
+
+    return 'US';
 }
 
 export async function getQuote(symbol: string) {
